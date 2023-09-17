@@ -1,0 +1,10 @@
+#root {
+  display: flex;
+}
+.worker {
+  display: flex;
+  margin: 2rem;
+  align-items: center;
+  justify-content: space-evenly;
+  width: 100px;
+}
