@@ -8,7 +8,7 @@ import {
   WOOD,
   WORKER,
 } from "./constants";
-import type { Actor, LabelType, TaxCentre, Worker } from "./logic";
+import type { Actor, LabelType, MarketPlace, TaxCentre, Worker } from "./logic";
 import { getGlobalQOL, isWorker } from "./logic";
 
 const resourceLabelDic: Record<string, string> = {
@@ -68,8 +68,9 @@ const showElement = (id: string, text: string | number) => {
   element.innerHTML = `${text}`;
 };
 
-export function show(time: number, actors: Actor[]) {
+export function show(time: number, actors: Actor[], marketplace: MarketPlace) {
   showElement("timer", time);
+  showElement("marketplace-prices", JSON.stringify(marketplace.prices));
   showElement("qol", getGlobalQOL(actors.filter(isWorker)));
   clearElement("root");
 

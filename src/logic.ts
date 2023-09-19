@@ -42,7 +42,7 @@ const consumableBlackList: Partial<Record<ResourceType, boolean>> = {
   money: true,
 };
 
-type MarketPlace = {
+export type MarketPlace = {
   sells: (PotentialTrade | null)[];
   prices: Record<ProducedResourceType, number>;
 };
@@ -177,9 +177,12 @@ function transact(
   // });
 }
 
-export function applyRules(workers: Worker[], taxCentre: TaxCentre) {
-  const prices = { food: 10, water: 10, wood: 10 };
-  const marketplace: MarketPlace = { sells: [], prices };
+export function applyRules(
+  workers: Worker[],
+  taxCentre: TaxCentre,
+  marketplace: MarketPlace
+) {
+  marketplace.sells = [];
   useResources(workers);
   transact(workers, taxCentre, marketplace);
 }

@@ -1,5 +1,5 @@
 import { show } from "./display";
-import type { Worker } from "./logic";
+import type { MarketPlace, Worker } from "./logic";
 import { applyRules, buildTaxCentre, buildWorker } from "./logic";
 
 const INTERVAL = 1000;
@@ -19,11 +19,14 @@ function loop() {
   const taxCentre = buildTaxCentre(1000, 0.1);
   const actors = [...workers, taxCentre];
 
-  show(time, actors);
+  const prices = { food: 10, water: 10, wood: 10 };
+  const marketplace: MarketPlace = { sells: [], prices };
+
+  show(time, actors, marketplace);
   setInterval(() => {
     time += 1;
-    applyRules(workers, taxCentre);
-    show(time, actors);
+    applyRules(workers, taxCentre, marketplace);
+    show(time, actors, marketplace);
   }, INTERVAL);
 }
 
