@@ -11,6 +11,7 @@ export type Resource = {
 };
 export type Worker = {
   id: string;
+  alive: boolean;
   type: ResourceType;
   resources: Record<ResourceType, number>;
 };
@@ -29,7 +30,7 @@ export function isWorker(actor: Actor): actor is Worker {
 
 export function buildWorker(type: ResourceType): Worker {
   const resources = { money: 50, food: 3, water: 3, wood: 3 };
-  return { id: uuid(), type, resources };
+  return { id: uuid(), alive: true, type, resources };
 }
 
 export function buildTaxCentre(money = 50, tax_rate = 0.2): TaxCentre {
@@ -92,6 +93,9 @@ function useResources(workers: Worker[]) {
         ? TICK_PRODUCED
         : -calculateConsumed(oldQuantity);
       worker.resources[type] += quantity;
+      if (worker.resources[type] <= 0) worker.alive = false;
+      // min for a resource is 0
+      worker.resources[type] = Math.max(0, worker.resources[type]);
     });
   });
 }
@@ -122,11 +126,11 @@ function transact(
 
   // setup sellers
   workers.forEach((worker) => {
-    getConsumableResources(worker).forEach(([type]) => {
+    getConsumableResources(worker).forEach(([type, quantity]) => {
       // producers that would keep their qol attempt to sell resources
       const isProducer = type === worker.type;
-      if (isProducer && keepsQol(worker.resources, type))
-        sells.push({ id: worker.id, type });
+      const shouldSell = quantity > 0 && keepsQol(worker.resources, type);
+      if (isProducer && shouldSell) sells.push({ id: worker.id, type });
     });
   });
 
@@ -140,41 +144,44 @@ function transact(
   while (sells[sellIndex]) {
     const sell = sells[sellIndex];
     if (!sell) return;
-    const { id: sellerId, type: sellType } = sell;
-    const { resources: sellerResources } = workerDic[sellerId];
 
-    // find buyer
-    const hasBuyer = workers
-      .filter((worker) => !keepsQol(worker.resources, sellType))
-      .sort(Math.random)
-      .some(({ resources: buyerResources }) => {
-        if (sellType === "money") return false;
-        const cost = prices[sellType];
-        // transfer 1 unit of the resource from seller to buyer for COST
-        const hasMoney = buyerResources.money >= cost;
-        if (hasMoney) {
-          buyerResources[sellType] += 1;
-          sellerResources[sellType] -= 1;
-          // apply tax
-          buyerResources.money -= cost;
-          const tax = calculateTax(taxResources, cost);
-          sellerResources.money += cost - tax;
-          taxResources.money += tax;
-          return true;
-        }
-        return false;
-      });
+    const { id: sellerId, type: sellType } = sell;
+    const { resources: sellerResources, alive: sellerAlive } =
+      workerDic[sellerId];
+
+    if (sellType === "money") return;
+
+    let buyer: undefined | Worker;
+    if (!sellerAlive) buyer = undefined;
+    else
+      buyer = workers
+        .filter((worker) => !keepsQol(worker.resources, sellType))
+        .filter((worker) => worker.id !== sellerId && worker.alive)
+        .sort(Math.random)
+        .find((worker) => worker.resources.money >= prices[sellType]);
+
+    if (buyer) {
+      const { resources: buyerResources } = buyer;
+      buyerResources[sellType] += 1;
+      sellerResources[sellType] -= 1;
+      if (sellerResources[sellType] <= 0) workerDic[sellerId].alive = false;
+
+      // apply tax
+      const cost = prices[sellType];
+      buyerResources.money -= cost;
+      const tax = calculateTax(taxResources, cost);
+      sellerResources.money += cost - tax;
+      taxResources.money += tax;
+    }
+
     // remove seller if the seller would change its QoL by selling
-    if (!keepsQol(sellerResources, sellType)) sells[sellIndex] = null;
+    if (!sellerAlive || !keepsQol(sellerResources, sellType)) {
+      sells[sellIndex] = null;
+    }
 
     // go to next seller when there are no buyers left
-    if (!hasBuyer) sellIndex = (sellIndex + 1) % sells.length;
+    if (!buyer) sellIndex = (sellIndex + 1) % sells.length;
   }
-
-  // for each resource, change its price if necessary
-  // Object.entries(prices).forEach(([type, price]) => {
-  //   console.log(type, price);
-  // });
 }
 
 export function applyRules(
