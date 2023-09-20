@@ -48,6 +48,8 @@ export class Market {
     let hadSale = false;
     while (this.sales[sellIndex]) {
       const sell = this.sales[sellIndex];
+      // we loop through all potential sales,
+      // so we must reset hadSale in a new cycle to check if there were sales (otherwise we would be using info from another cycle)
       if (sellIndex === 0) hadSale = false;
       if (!sell) return null;
 
