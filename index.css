@@ -1,5 +1,6 @@
 #root {
   display: flex;
+  flex-wrap: wrap;
 }
 .worker {
   display: flex;
