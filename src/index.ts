@@ -4,7 +4,7 @@ import { Worker } from "./Worker";
 import { show } from "./display";
 
 const INTERVAL = 0.5 * 1000;
-const CLERK_COUNT = 3;
+const CLERK_COUNT = 8;
 function createWorkers() {
   const workers: Worker[] = [];
 
