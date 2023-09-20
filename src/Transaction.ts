@@ -1,6 +1,7 @@
 import type { TaxCentre } from "./TaxCentre";
+import type { Market } from "./Market";
 import type { Worker } from "./Worker";
-import { MarketPlace, PotentialTrade, ResourceType } from "./types";
+import { PotentialTrade, ResourceType } from "./types";
 
 type A = {
   buyer: Worker;
@@ -34,7 +35,7 @@ export class Transaction {
     this.seller.resources.money += cost - tax;
     this.taxer.resources.money += tax;
   }
-  transact(trade: PotentialTrade, prices: MarketPlace["prices"]) {
+  transact(trade: PotentialTrade, prices: Market["prices"]) {
     if (trade.type === "money") return;
 
     const quantity = this.sellProduct();

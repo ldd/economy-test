@@ -12,8 +12,3 @@ export interface Actor<T extends string | number | symbol = string> {
 }
 
 export type PotentialTrade = { id: string; type: ResourceType };
-
-export type MarketPlace = {
-  sells: (PotentialTrade | null)[];
-  prices: Record<ProducedResourceType, number>;
-};

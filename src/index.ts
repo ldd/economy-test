@@ -1,4 +1,4 @@
-import { Market } from "./Marketplace";
+import { Market } from "./Market";
 import { TaxCentre } from "./TaxCentre";
 import { Worker } from "./Worker";
 import { show } from "./display";
@@ -18,19 +18,15 @@ function createWorkers() {
   return workers;
 }
 
-function applyRules(
-  workers: Worker[],
-  taxCentre: TaxCentre,
-  marketplace: Market
-) {
+function applyRules(workers: Worker[], taxCentre: TaxCentre, market: Market) {
   workers.forEach((worker) => worker.useResources());
 
   taxCentre.distributeTax(workers);
   taxCentre.printMoney();
 
-  marketplace.setupMarketplace(workers);
-  const tradeResult = marketplace.sellAll(workers, taxCentre);
-  if (tradeResult) marketplace.adjustPrices(tradeResult);
+  market.setupMarketplace(workers);
+  const tradeResult = market.sellAll(workers, taxCentre);
+  if (tradeResult) market.adjustPrices(tradeResult);
 }
 function loop() {
   let time = 0;
@@ -39,12 +35,12 @@ function loop() {
   const taxCentre = new TaxCentre(1000, 0.1);
   const actors = [...workers, taxCentre];
 
-  const marketplace = new Market();
-  show(time, actors, marketplace);
+  const market = new Market();
+  show(time, actors, market);
   setInterval(() => {
     time += 1;
-    applyRules(workers, taxCentre, marketplace);
-    show(time, actors, marketplace);
+    applyRules(workers, taxCentre, market);
+    show(time, actors, market);
   }, INTERVAL);
 }
 

@@ -1,3 +1,4 @@
+import { Market } from "./Market";
 import {
   CLERK,
   FOOD,
@@ -9,7 +10,7 @@ import {
   WORKER,
 } from "./constants";
 import { getGlobalQOL, isWorker } from "./helper";
-import { Actor, LabelType, MarketPlace } from "./types";
+import { Actor, LabelType } from "./types";
 
 const resourceLabelDic: Record<string, string> = {
   food: FOOD,
@@ -65,9 +66,9 @@ const showElement = (id: string, text: string | number) => {
   element.innerHTML = `${text}`;
 };
 
-export function show(time: number, actors: Actor[], marketplace: MarketPlace) {
+export function show(time: number, actors: Actor[], market: Market) {
   showElement("timer", time);
-  showElement("marketplace-prices", JSON.stringify(marketplace.prices));
+  showElement("marketplace-prices", JSON.stringify(market.prices));
   showElement("qol", getGlobalQOL(actors.filter(isWorker)));
   clearElement("root");
 
