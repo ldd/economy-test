@@ -138,6 +138,8 @@ function transact(
     workers.map((worker) => [worker.id, worker])
   );
 
+  const decreaseDic: Partial<Record<ResourceType, boolean>> = {};
+
   sells.sort(Math.random);
 
   let sellIndex = 0;
@@ -150,6 +152,8 @@ function transact(
       workerDic[sellerId];
 
     if (sellType === "money") return;
+
+    decreaseDic[sellType] ||= false;
 
     let buyer: undefined | Worker;
     if (!sellerAlive) buyer = undefined;
@@ -182,6 +186,16 @@ function transact(
     // go to next seller when there are no buyers left
     if (!buyer) sellIndex = (sellIndex + 1) % sells.length;
   }
+
+  // for each resource, change its price if necessary
+  Object.entries(prices).forEach((tuple) => {
+    const [type, price] = tuple as [ProducedResourceType, number];
+    if (decreaseDic[type] === undefined) return;
+    const newPrice = decreaseDic[type]
+      ? Math.floor(price * 0.95)
+      : Math.ceil(price * 1.05);
+    prices[type] = Math.max(1, newPrice);
+  });
 }
 
 export function applyRules(
