@@ -9,3 +9,5 @@ export function getGlobalQOL(workers: Worker[]) {
   const total = workers.reduce((total, worker) => total + worker.qol(), 0);
   return Math.round((total / workers.length) * 100) / 100;
 }
+
+export const uuid = () => `${Math.random()}`;

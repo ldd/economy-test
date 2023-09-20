@@ -1,9 +1,8 @@
+import { uuid } from "./helper";
 import type { Actor, TaxCenterType } from "./types";
 import { Worker } from "./Worker";
 
 const CLERK_SALARY = 150;
-
-const uuid = () => `${Math.random()}`;
 
 export class TaxCentre implements Actor<TaxCenterType> {
   id = uuid();

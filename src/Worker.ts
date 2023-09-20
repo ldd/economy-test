@@ -1,8 +1,7 @@
+import { uuid } from "./helper";
 import type { Actor, ResourceType } from "./types";
 
 const TICK_PRODUCED = 10;
-
-const uuid = () => `${Math.random()}`;
 
 const consumableBlackList: Partial<Record<ResourceType, boolean>> = {
   money: true,
