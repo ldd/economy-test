@@ -103,13 +103,7 @@ function useResources(workers: Worker[]) {
 const calculateTax = (taxResources: TaxCentre["resources"], cost: number) =>
   Math.max(1, Math.floor(taxResources.tax_rate * cost));
 
-function transact(
-  workers: Worker[],
-  taxCentre: TaxCentre,
-  marketplace: MarketPlace
-) {
-  const { sells, prices } = marketplace;
-
+function distributeTax(workers: Worker[], taxCentre: TaxCentre) {
   // tax centre refills clerks pockets
   const taxResources = taxCentre.resources;
   workers
@@ -120,9 +114,55 @@ function transact(
       worker.resources.money += refill;
       taxResources.money -= refill;
     });
+}
 
-  // print money
-  taxResources.money = 1000;
+const printMoney = (taxCentre: TaxCentre) => (taxCentre.resources.money = 1000);
+
+function transact(
+  buyer: Worker,
+  seller: Worker,
+  taxCentre: TaxCentre,
+  trade: PotentialTrade,
+  prices: MarketPlace["prices"]
+) {
+  const { type: sellType } = trade;
+
+  if (sellType === "money") return;
+
+  const { resources: buyerResources } = buyer;
+  const { resources: sellerResources } = seller;
+  buyerResources[sellType] += 1;
+  sellerResources[sellType] -= 1;
+  if (sellerResources[sellType] <= 0) seller.alive = false;
+
+  // apply tax
+  const cost = prices[sellType];
+  buyerResources.money -= cost;
+  const { resources: taxResources } = taxCentre;
+  const tax = calculateTax(taxResources, cost);
+  sellerResources.money += cost - tax;
+  taxResources.money += tax;
+}
+
+type SellRecord = Partial<Record<ResourceType, boolean>>;
+function adjustPrices(prices: MarketPlace["prices"], dic: SellRecord) {
+  // for each resource, change its price if necessary
+  Object.entries(prices).forEach((tuple) => {
+    const [type, price] = tuple as [ProducedResourceType, number];
+    if (dic[type] === undefined) return;
+    const newPrice = dic[type]
+      ? Math.floor(price * 0.95)
+      : Math.ceil(price * 1.05);
+    prices[type] = Math.max(1, newPrice);
+  });
+}
+
+function sellAll(
+  workers: Worker[],
+  taxCentre: TaxCentre,
+  marketplace: MarketPlace
+) {
+  const { sells, prices } = marketplace;
 
   // setup sellers
   workers.forEach((worker) => {
@@ -137,21 +177,20 @@ function transact(
   const workerDic = Object.fromEntries(
     workers.map((worker) => [worker.id, worker])
   );
-
-  const decreaseDic: Partial<Record<ResourceType, boolean>> = {};
+  const decreaseDic: SellRecord = {};
 
   sells.sort(Math.random);
 
   let sellIndex = 0;
   while (sells[sellIndex]) {
     const sell = sells[sellIndex];
-    if (!sell) return;
+    if (!sell) return null;
 
     const { id: sellerId, type: sellType } = sell;
     const { resources: sellerResources, alive: sellerAlive } =
       workerDic[sellerId];
 
-    if (sellType === "money") return;
+    if (sellType === "money") return null;
 
     decreaseDic[sellType] ||= false;
 
@@ -164,38 +203,16 @@ function transact(
         .sort(Math.random)
         .find((worker) => worker.resources.money >= prices[sellType]);
 
-    if (buyer) {
-      const { resources: buyerResources } = buyer;
-      buyerResources[sellType] += 1;
-      sellerResources[sellType] -= 1;
-      if (sellerResources[sellType] <= 0) workerDic[sellerId].alive = false;
-
-      // apply tax
-      const cost = prices[sellType];
-      buyerResources.money -= cost;
-      const tax = calculateTax(taxResources, cost);
-      sellerResources.money += cost - tax;
-      taxResources.money += tax;
-    }
+    if (buyer) transact(buyer, workerDic[sellerId], taxCentre, sell, prices);
 
     // remove seller if the seller would change its QoL by selling
-    if (!sellerAlive || !keepsQol(sellerResources, sellType)) {
+    if (!sellerAlive || !keepsQol(sellerResources, sellType))
       sells[sellIndex] = null;
-    }
 
     // go to next seller when there are no buyers left
     if (!buyer) sellIndex = (sellIndex + 1) % sells.length;
   }
-
-  // for each resource, change its price if necessary
-  Object.entries(prices).forEach((tuple) => {
-    const [type, price] = tuple as [ProducedResourceType, number];
-    if (decreaseDic[type] === undefined) return;
-    const newPrice = decreaseDic[type]
-      ? Math.floor(price * 0.95)
-      : Math.ceil(price * 1.05);
-    prices[type] = Math.max(1, newPrice);
-  });
+  return decreaseDic;
 }
 
 export function applyRules(
@@ -203,7 +220,12 @@ export function applyRules(
   taxCentre: TaxCentre,
   marketplace: MarketPlace
 ) {
-  marketplace.sells = [];
   useResources(workers);
-  transact(workers, taxCentre, marketplace);
+
+  distributeTax(workers, taxCentre);
+  printMoney(taxCentre);
+
+  marketplace.sells = [];
+  const tradeResult = sellAll(workers, taxCentre, marketplace);
+  if (tradeResult) adjustPrices(marketplace.prices, tradeResult);
 }
