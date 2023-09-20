@@ -118,6 +118,30 @@ function distributeTax(workers: Worker[], taxCentre: TaxCentre) {
 
 const printMoney = (taxCentre: TaxCentre) => (taxCentre.resources.money = 1000);
 
+function sellProduct(
+  buyer: Worker,
+  seller: Worker,
+  type: PotentialTrade["type"]
+) {
+  if (type === "money") return seller.resources[type];
+
+  buyer.resources[type] += 1;
+  seller.resources[type] -= 1;
+  return seller.resources[type];
+}
+
+function taxTransaction(
+  buyerResources: Worker["resources"],
+  sellerResources: Worker["resources"],
+  taxResources: TaxCentre["resources"],
+  cost: number
+) {
+  buyerResources.money -= cost;
+  const tax = calculateTax(taxResources, cost);
+  sellerResources.money += cost - tax;
+  taxResources.money += tax;
+}
+
 function transact(
   buyer: Worker,
   seller: Worker,
@@ -125,23 +149,13 @@ function transact(
   trade: PotentialTrade,
   prices: MarketPlace["prices"]
 ) {
-  const { type: sellType } = trade;
+  if (trade.type === "money") return;
 
-  if (sellType === "money") return;
+  const quantity = sellProduct(buyer, seller, trade.type);
+  if (quantity <= 0) seller.alive = false;
 
-  const { resources: buyerResources } = buyer;
-  const { resources: sellerResources } = seller;
-  buyerResources[sellType] += 1;
-  sellerResources[sellType] -= 1;
-  if (sellerResources[sellType] <= 0) seller.alive = false;
-
-  // apply tax
-  const cost = prices[sellType];
-  buyerResources.money -= cost;
-  const { resources: taxResources } = taxCentre;
-  const tax = calculateTax(taxResources, cost);
-  sellerResources.money += cost - tax;
-  taxResources.money += tax;
+  const cost = prices[trade.type];
+  taxTransaction(buyer.resources, seller.resources, taxCentre.resources, cost);
 }
 
 type SellRecord = Partial<Record<ResourceType, boolean>>;
@@ -157,14 +171,8 @@ function adjustPrices(prices: MarketPlace["prices"], dic: SellRecord) {
   });
 }
 
-function sellAll(
-  workers: Worker[],
-  taxCentre: TaxCentre,
-  marketplace: MarketPlace
-) {
-  const { sells, prices } = marketplace;
-
-  // setup sellers
+function setupMarketplace(workers: Worker[], marketplace: MarketPlace) {
+  const { sells } = marketplace;
   workers.forEach((worker) => {
     getConsumableResources(worker).forEach(([type, quantity]) => {
       // producers that would keep their qol attempt to sell resources
@@ -173,13 +181,22 @@ function sellAll(
       if (isProducer && shouldSell) sells.push({ id: worker.id, type });
     });
   });
+  sells.sort(Math.random);
+}
+
+function sellAll(
+  workers: Worker[],
+  taxCentre: TaxCentre,
+  marketplace: MarketPlace
+) {
+  const { sells, prices } = marketplace;
+
+  setupMarketplace(workers, marketplace);
 
   const workerDic = Object.fromEntries(
     workers.map((worker) => [worker.id, worker])
   );
   const decreaseDic: SellRecord = {};
-
-  sells.sort(Math.random);
 
   let sellIndex = 0;
   while (sells[sellIndex]) {
