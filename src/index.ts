@@ -4,7 +4,7 @@ import { Worker } from "./Worker";
 import { show } from "./display";
 
 const INTERVAL = 0.5 * 1000;
-
+const CLERK_COUNT = 3;
 function createWorkers() {
   const workers: Worker[] = [];
 
@@ -12,9 +12,9 @@ function createWorkers() {
   workers.push(new Worker("water"));
   workers.push(new Worker("wood"));
 
-  workers.push(new Worker("money"));
-  workers.push(new Worker("money"));
-  workers.push(new Worker("money"));
+  for (let i = 0; i < CLERK_COUNT; i += 1) {
+    workers.push(new Worker("money"));
+  }
   return workers;
 }
 
@@ -52,7 +52,7 @@ function loop() {
   let time = 0;
 
   const workers = createWorkers();
-  const taxCentre = new TaxCentre(1000, 0.1);
+  const taxCentre = new TaxCentre(1000, 0.65);
   const actors = [...workers, taxCentre];
 
   const market = new Market();
