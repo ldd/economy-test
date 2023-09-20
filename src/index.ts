@@ -21,8 +21,8 @@ function createWorkers() {
 function applyRules(workers: Worker[], taxCentre: TaxCentre, market: Market) {
   workers.forEach((worker) => worker.useResources());
 
-  taxCentre.distributeTax(workers);
-  taxCentre.printMoney();
+  taxCentre.distributeTax(workers, market.totalPrice(4));
+  taxCentre.printMoney(market.totalPrice(33));
 
   market.setupMarketplace(workers);
   const tradeResult = market.sellAll(workers, taxCentre);

@@ -92,4 +92,10 @@ export class Market {
     }
     return decreaseDic;
   }
+  totalPrice(multiplier = 1) {
+    return Object.values(this.prices).reduce(
+      (total, quantity) => total + quantity * multiplier,
+      0
+    );
+  }
 }
