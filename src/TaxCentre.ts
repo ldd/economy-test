@@ -16,8 +16,8 @@ export class TaxCentre implements Actor<TaxCenterType> {
   calculateTax(cost: number) {
     return Math.max(1, Math.floor(this.resources.tax_rate * cost));
   }
+  // tax centre refills clerks pockets up until their salary
   distributeTax(workers: Worker[]) {
-    // tax centre refills clerks pockets
     const taxResources = this.resources;
     workers
       .filter((worker) => worker.type === "money")
@@ -29,6 +29,6 @@ export class TaxCentre implements Actor<TaxCenterType> {
       });
   }
   printMoney() {
-    return (this.resources.money = 1000);
+    this.resources.money = 1000;
   }
 }

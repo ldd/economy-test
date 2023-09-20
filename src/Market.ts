@@ -6,15 +6,15 @@ import { PotentialTrade, ProducedResourceType, ResourceType } from "./types";
 type SellRecord = Partial<Record<ResourceType, boolean>>;
 
 export class Market {
-  sells: (PotentialTrade | null)[];
+  private sales: (PotentialTrade | null)[];
   prices: Record<ProducedResourceType, number>;
   constructor() {
-    this.sells = [];
+    this.sales = [];
     this.prices = { food: 10, water: 10, wood: 10 };
   }
 
   adjustPrices(sellRecord: SellRecord) {
-    // for each resource, change its price if necessary
+    // for each resource, change its price if necessary (based on sellRecord)
     Object.entries(this.prices).forEach((tuple) => {
       const [type, price] = tuple as [ProducedResourceType, number];
       if (sellRecord[type] === undefined) return;
@@ -26,16 +26,16 @@ export class Market {
   }
 
   setupMarketplace(workers: Worker[]) {
-    this.sells = [];
+    this.sales = [];
     workers.forEach((worker) => {
       worker.getConsumableResources().forEach(([type, quantity]) => {
         // producers that would keep their qol attempt to sell resources
         const isProducer = type === worker.type;
         const shouldSell = quantity > 0 && worker.keepsQol(type);
-        if (isProducer && shouldSell) this.sells.push({ id: worker.id, type });
+        if (isProducer && shouldSell) this.sales.push({ id: worker.id, type });
       });
     });
-    this.sells.sort(Math.random);
+    this.sales.sort(Math.random);
   }
 
   sellAll(workers: Worker[], taxer: TaxCentre) {
@@ -45,40 +45,44 @@ export class Market {
     const decreaseDic: SellRecord = {};
 
     let sellIndex = 0;
-    while (this.sells[sellIndex]) {
-      const sell = this.sells[sellIndex];
+    let limit = 0;
+    while (this.sales[sellIndex]) {
+      limit++;
+      if (limit > 1_000) return;
+      const sell = this.sales[sellIndex];
       if (!sell) return null;
 
-      const { id: sellerId, type: sellType } = sell;
+      const { id: sellerId, type } = sell;
       const { alive: sellerAlive } = workerDic[sellerId];
 
-      if (sellType === "money") return null;
+      if (type === "money") return null;
 
-      decreaseDic[sellType] ||= false;
+      decreaseDic[type] ||= false;
 
+      // find a valid buyer
       let buyer: undefined | Worker;
       if (!sellerAlive) buyer = undefined;
       else
         buyer = workers
-          .filter((worker) => !worker.keepsQol(sellType))
+          .filter((worker) => !worker.keepsQol(type))
           .filter((worker) => worker.id !== sellerId && worker.alive)
           .sort(Math.random)
-          .find((worker) => worker.resources.money >= this.prices[sellType]);
+          .find((worker) => worker.resources.money >= this.prices[type]);
 
       const seller = workerDic[sellerId];
 
       if (buyer) {
-        // prettier-ignore
-        const transaction = new Transaction({ buyer, seller , taxer, type: sellType});
+        const transaction = new Transaction({ buyer, seller, taxer, type });
         transaction.transact(sell, this.prices);
       }
 
-      // remove seller if the seller would change its QoL by selling
-      if (!sellerAlive || !seller.keepsQol(sellType))
-        this.sells[sellIndex] = null;
+      // remove seller when:
+      // - it would change its QoL by selling
+      // - it is no longer alive
+      if (!sellerAlive || !seller.keepsQol(type)) this.sales[sellIndex] = null;
 
       // go to next seller when there are no buyers left
-      if (!buyer) sellIndex = (sellIndex + 1) % this.sells.length;
+      if (!buyer) sellIndex = (sellIndex + 1) % this.sales.length;
     }
     return decreaseDic;
   }

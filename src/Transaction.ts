@@ -3,19 +3,19 @@ import type { Market } from "./Market";
 import type { Worker } from "./Worker";
 import { PotentialTrade, ResourceType } from "./types";
 
-type A = {
+type TransactionProps = {
   buyer: Worker;
   seller: Worker;
   taxer: TaxCentre;
   type: ResourceType;
 };
 
-export class Transaction {
-  buyer: Worker;
-  seller: Worker;
-  taxer: TaxCentre;
-  type: ResourceType;
-  constructor(props: A) {
+export class Transaction implements TransactionProps {
+  buyer;
+  seller;
+  taxer;
+  type;
+  constructor(props: TransactionProps) {
     const { buyer, seller, taxer, type } = props;
     this.buyer = buyer;
     this.seller = seller;
