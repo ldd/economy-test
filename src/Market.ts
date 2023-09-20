@@ -5,6 +5,9 @@ import { PotentialTrade, ProducedResourceType, ResourceType } from "./types";
 
 type SellRecord = Partial<Record<ResourceType, boolean>>;
 
+// since we expect roughly half to be negative
+const randomSort = () => Math.random() - 0.5;
+
 export class Market {
   private sales: (PotentialTrade | null)[];
   prices: Record<ProducedResourceType, number>;
@@ -35,7 +38,7 @@ export class Market {
         if (isProducer && shouldSell) this.sales.push({ id: worker.id, type });
       });
     });
-    this.sales.sort(Math.random);
+    this.sales.sort(randomSort);
   }
 
   sellAll(workers: Worker[], taxer: TaxCentre) {
@@ -67,7 +70,7 @@ export class Market {
         buyer = workers
           .filter((worker) => !worker.keepsQol(type))
           .filter((worker) => worker.id !== sellerId && worker.alive)
-          .sort(Math.random)
+          .sort(randomSort)
           .find((worker) => worker.resources.money >= this.prices[type]);
 
       if (buyer) {
