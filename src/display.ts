@@ -8,8 +8,8 @@ import {
   WOOD,
   WORKER,
 } from "./constants";
-import type { Actor, LabelType, MarketPlace, TaxCentre, Worker } from "./logic";
-import { getGlobalQOL, isWorker } from "./logic";
+import { getGlobalQOL, isWorker } from "./helper";
+import { Actor, LabelType, MarketPlace } from "./types";
 
 const resourceLabelDic: Record<string, string> = {
   food: FOOD,
@@ -35,10 +35,7 @@ function showActor(actor: Actor) {
 
   const resourceList = Object.entries(actor.resources);
   // show death if at least one resource has been depleted
-  if (
-    resourceList.some(([type, quantity]) => type !== "money" && quantity <= 0)
-  )
-    return worker.append("👻");
+  if (!actor.alive) return worker.append("👻");
 
   // add worker's icon (🧑‍🌾, 🧑‍💼, 🏛️)
   let workerIcon = actor.type === "money" ? CLERK : WORKER;

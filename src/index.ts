@@ -1,27 +1,45 @@
+import { Market } from "./Marketplace";
+import { TaxCentre } from "./TaxCentre";
+import { Worker } from "./Worker";
 import { show } from "./display";
-import type { MarketPlace, Worker } from "./logic";
-import { applyRules, buildTaxCentre, buildWorker } from "./logic";
 
-const INTERVAL = 1000;
+const INTERVAL = 0.5 * 1000;
 
-function loop() {
-  let time = 0;
+function createWorkers() {
   const workers: Worker[] = [];
 
-  workers.push(buildWorker("food"));
-  workers.push(buildWorker("water"));
-  workers.push(buildWorker("wood"));
+  workers.push(new Worker("food"));
+  workers.push(new Worker("water"));
+  workers.push(new Worker("wood"));
 
-  workers.push(buildWorker("money"));
-  workers.push(buildWorker("money"));
-  workers.push(buildWorker("money"));
+  workers.push(new Worker("money"));
+  workers.push(new Worker("money"));
+  workers.push(new Worker("money"));
+  return workers;
+}
 
-  const taxCentre = buildTaxCentre(1000, 0.1);
+function applyRules(
+  workers: Worker[],
+  taxCentre: TaxCentre,
+  marketplace: Market
+) {
+  workers.forEach((worker) => worker.useResources());
+
+  taxCentre.distributeTax(workers);
+  taxCentre.printMoney();
+
+  marketplace.setupMarketplace(workers);
+  const tradeResult = marketplace.sellAll(workers, taxCentre);
+  if (tradeResult) marketplace.adjustPrices(tradeResult);
+}
+function loop() {
+  let time = 0;
+
+  const workers = createWorkers();
+  const taxCentre = new TaxCentre(1000, 0.1);
   const actors = [...workers, taxCentre];
 
-  const prices = { food: 10, water: 10, wood: 10 };
-  const marketplace: MarketPlace = { sells: [], prices };
-
+  const marketplace = new Market();
   show(time, actors, marketplace);
   setInterval(() => {
     time += 1;
