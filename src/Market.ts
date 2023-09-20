@@ -45,15 +45,14 @@ export class Market {
     const decreaseDic: SellRecord = {};
 
     let sellIndex = 0;
-    let limit = 0;
+    let hadSale = false;
     while (this.sales[sellIndex]) {
-      limit++;
-      if (limit > 1_000) return;
       const sell = this.sales[sellIndex];
+      if (sellIndex === 0) hadSale = false;
       if (!sell) return null;
 
       const { id: sellerId, type } = sell;
-      const { alive: sellerAlive } = workerDic[sellerId];
+      const seller = workerDic[sellerId];
 
       if (type === "money") return null;
 
@@ -61,7 +60,7 @@ export class Market {
 
       // find a valid buyer
       let buyer: undefined | Worker;
-      if (!sellerAlive) buyer = undefined;
+      if (!seller.alive) buyer = undefined;
       else
         buyer = workers
           .filter((worker) => !worker.keepsQol(type))
@@ -69,17 +68,22 @@ export class Market {
           .sort(Math.random)
           .find((worker) => worker.resources.money >= this.prices[type]);
 
-      const seller = workerDic[sellerId];
-
       if (buyer) {
         const transaction = new Transaction({ buyer, seller, taxer, type });
         transaction.transact(sell, this.prices);
+        hadSale = true;
       }
 
       // remove seller when:
       // - it would change its QoL by selling
       // - it is no longer alive
-      if (!sellerAlive || !seller.keepsQol(type)) this.sales[sellIndex] = null;
+      if (!seller.alive || !seller.keepsQol(type)) this.sales[sellIndex] = null;
+
+      // no sales from potential sales, so exit early
+      if (sellIndex === this.sales.length - 1 && !hadSale) {
+        decreaseDic[type] = true;
+        return;
+      }
 
       // go to next seller when there are no buyers left
       if (!buyer) sellIndex = (sellIndex + 1) % this.sales.length;
