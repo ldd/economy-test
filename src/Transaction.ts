@@ -6,7 +6,7 @@ import { PotentialTrade, ResourceType } from "./types";
 type TransactionProps = {
   buyer: Worker;
   seller: Worker;
-  taxer: TaxCentre;
+  taxer?: TaxCentre;
   type: ResourceType;
 };
 
@@ -30,10 +30,11 @@ export class Transaction implements TransactionProps {
     return this.seller.resources[this.type];
   }
   taxTransaction(cost: number) {
-    this.buyer.resources.money -= cost;
-    const tax = this.taxer.calculateTax(cost);
-    this.seller.resources.money += cost - tax;
-    this.taxer.resources.money += tax;
+    if (this.taxer) {
+      const tax = this.taxer.calculateTax(cost);
+      this.seller.resources.money += cost - tax;
+      this.taxer.resources.money += tax;
+    } else this.seller.resources.money += cost;
   }
   transact(trade: PotentialTrade, prices: Market["prices"]) {
     if (trade.type === "money") return;
@@ -42,6 +43,7 @@ export class Transaction implements TransactionProps {
     if (quantity <= 0) this.seller.alive = false;
 
     const cost = prices[trade.type];
+    this.buyer.resources.money -= cost;
     this.taxTransaction(cost);
   }
 }

@@ -22,7 +22,7 @@ const deflate = <T extends string>(resource: Record<T, number>, type: T) => {
   resource[type] = Math.floor(resource[type] / 10);
 };
 
-function remintCoin(workers: Worker[], taxCentre: TaxCentre, market: Market) {
+function remintCoin(workers: Worker[], market: Market, taxCentre?: TaxCentre) {
   const aliveWorkers = workers.filter((worker) => worker.alive);
   let wallet = aliveWorkers.reduce(
     (total, worker) => (total += worker.resources.money),
@@ -31,18 +31,18 @@ function remintCoin(workers: Worker[], taxCentre: TaxCentre, market: Market) {
   const LIMIT = 100_000;
   if (wallet / aliveWorkers.length < LIMIT) return;
   aliveWorkers.forEach((worker) => deflate(worker.resources, "money"));
-  deflate(taxCentre.resources, "money");
+  if (taxCentre) deflate(taxCentre.resources, "money");
   Object.keys(market.prices).forEach((priceType) => {
     deflate(market.prices, priceType as keyof Market["prices"]);
   });
 }
 
-function applyRules(workers: Worker[], taxCentre: TaxCentre, market: Market) {
+function applyRules(workers: Worker[], market: Market, taxCentre?: TaxCentre) {
   workers.forEach((worker) => worker.useResources());
 
-  remintCoin(workers, taxCentre, market);
-  taxCentre.distributeTax(workers, market.totalPrice(4));
-  taxCentre.printMoney(market.totalPrice(33));
+  remintCoin(workers, market, taxCentre);
+  taxCentre?.distributeTax(workers, market.totalPrice(4));
+  taxCentre?.printMoney(market.totalPrice(33));
 
   market.setupMarketplace(workers);
   const tradeResult = market.sellAll(workers, taxCentre);
@@ -59,7 +59,7 @@ function loop() {
   show(time, actors, market);
   setInterval(() => {
     time += 1;
-    applyRules(workers, taxCentre, market);
+    applyRules(workers, market, taxCentre);
     show(time, actors, market);
   }, INTERVAL);
 }

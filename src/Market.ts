@@ -41,7 +41,7 @@ export class Market {
     this.sales.sort(randomSort);
   }
 
-  sellAll(workers: Worker[], taxer: TaxCentre) {
+  sellAll(workers: Worker[], taxer?: TaxCentre) {
     const workerDic = Object.fromEntries(
       workers.map((worker) => [worker.id, worker])
     );
