@@ -39,8 +39,10 @@ function remintCoin(workers: Worker[], market: Market, taxCentre?: TaxCentre) {
 
 function markDead(workers: Worker[]) {
   workers.forEach((worker) =>
-    Object.values(worker.resources).some((quantity) => {
-      if (quantity <= 0) worker.alive = false;
+    Object.entries(worker.resources).some(([type, quantity]) => {
+      if (quantity <= 0 && worker.alive) {
+        worker.alive = false;
+      }
       return !worker.alive;
     })
   );
