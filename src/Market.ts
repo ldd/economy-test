@@ -8,6 +8,9 @@ type SellRecord = Partial<Record<ResourceType, boolean>>;
 // since we expect roughly half to be negative
 const randomSort = () => Math.random() - 0.5;
 
+const lowestSort = (a: Worker, b: Worker, type: ProducedResourceType): number =>
+  a.resources[type] - b.resources[type] || a.qol() - b.qol();
+
 export class Market {
   private sales: PotentialTrade[];
   prices: Record<ProducedResourceType, number>;
