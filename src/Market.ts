@@ -9,7 +9,7 @@ type SellRecord = Partial<Record<ResourceType, boolean>>;
 const randomSort = () => Math.random() - 0.5;
 
 export class Market {
-  private sales: (PotentialTrade | null)[];
+  private sales: PotentialTrade[];
   prices: Record<ProducedResourceType, number>;
   constructor() {
     this.sales = [];
@@ -41,7 +41,7 @@ export class Market {
     this.sales.sort(randomSort);
   }
 
-  sellAll(workers: Worker[], taxer?: TaxCentre) {
+  sellAll(workers: Worker[], taxer?: TaxCentre): SellRecord | null {
     const workerDic = Object.fromEntries(
       workers.map((worker) => [worker.id, worker])
     );
@@ -49,12 +49,15 @@ export class Market {
 
     let sellIndex = 0;
     let hadSale = false;
-    while (this.sales[sellIndex]) {
+    while (!this.sales[sellIndex].unfulfilled) {
       const sell = this.sales[sellIndex];
       // we loop through all potential sales,
       // so we must reset hadSale in a new cycle to check if there were sales (otherwise we would be using info from another cycle)
       if (sellIndex === 0) hadSale = false;
-      if (!sell) return null;
+      if (sell.unfulfilled) {
+        sellIndex = (sellIndex + 1) % this.sales.length;
+        continue;
+      }
 
       const { id: sellerId, type } = sell;
       const seller = workerDic[sellerId];
@@ -82,7 +85,8 @@ export class Market {
       // remove seller when:
       // - it would change its QoL by selling
       // - it is no longer alive
-      if (!seller.alive || !seller.keepsQol(type)) this.sales[sellIndex] = null;
+      if (!seller.alive || !seller.keepsQol(type))
+        this.sales[sellIndex].unfulfilled = true;
 
       // no sales from potential sales, so exit early
       if (sellIndex === this.sales.length - 1 && !hadSale) {

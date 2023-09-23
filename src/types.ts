@@ -11,4 +11,8 @@ export interface Actor<T extends string | number | symbol = string> {
   resources: Record<T, number>;
 }
 
-export type PotentialTrade = { id: string; type: ResourceType };
+export type PotentialTrade = {
+  id: string;
+  type: ResourceType;
+  unfulfilled?: true;
+};
