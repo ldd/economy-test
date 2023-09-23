@@ -45,7 +45,6 @@ export class Market {
     const workerDic = Object.fromEntries(
       workers.map((worker) => [worker.id, worker])
     );
-    const decreaseDic: SellRecord = {};
 
     let sellIndex = 0;
     let hadSale = false;
@@ -62,9 +61,7 @@ export class Market {
       const { id: sellerId, type } = sell;
       const seller = workerDic[sellerId];
 
-      if (type === "money") return null;
-
-      decreaseDic[type] ||= false;
+      if (type === "money") break;
 
       // find a valid buyer
       let buyer: undefined | Worker;
@@ -89,15 +86,22 @@ export class Market {
         this.sales[sellIndex].unfulfilled = true;
 
       // no sales from potential sales, so exit early
-      if (sellIndex === this.sales.length - 1 && !hadSale) {
-        decreaseDic[type] = true;
-        return;
-      }
+      if (sellIndex === this.sales.length - 1 && !hadSale) break;
 
       // go to next seller when there are no buyers left
       if (!buyer) sellIndex = (sellIndex + 1) % this.sales.length;
     }
-    return decreaseDic;
+
+    // build and return a record of sales for each type
+    // true if at least one sale was unfulfilled
+    // false if at least one more sale could have been done by a seller
+    // undefined otherwise
+    const record: SellRecord = {};
+    this.sales.forEach(({ id, type, unfulfilled }) => {
+      if (unfulfilled) record[type] = true;
+      else if (workerDic[id].keepsQol(type)) record[type] = false;
+    });
+    return record;
   }
   totalPrice(multiplier = 1) {
     return Object.values(this.prices).reduce(
