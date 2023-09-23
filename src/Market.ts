@@ -30,6 +30,17 @@ export class Market {
       this.prices[type] = Math.max(1, newPrice);
     });
   }
+  adjustProducerPrices() {
+    const keys = Object.keys(this.prices) as ProducedResourceType[];
+    keys.forEach((key) => {
+      let minPrice = keys.reduce((total, otherKey) => {
+        if (key === otherKey) return total;
+        return total + this.prices[otherKey];
+      }, 0);
+      minPrice = Math.ceil(minPrice / 10);
+      this.prices[key] = Math.max(minPrice, this.prices[key]);
+    });
+  }
 
   setupMarketplace(workers: Worker[]) {
     this.sales = [];
