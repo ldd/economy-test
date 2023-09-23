@@ -37,6 +37,15 @@ function remintCoin(workers: Worker[], market: Market, taxCentre?: TaxCentre) {
   });
 }
 
+function markDead(workers: Worker[]) {
+  workers.forEach((worker) =>
+    Object.values(worker.resources).some((quantity) => {
+      if (quantity <= 0) worker.alive = false;
+      return !worker.alive;
+    })
+  );
+}
+
 function applyRules(workers: Worker[], market: Market, taxCentre?: TaxCentre) {
   workers.forEach((worker) => worker.useResources());
 
@@ -47,6 +56,8 @@ function applyRules(workers: Worker[], market: Market, taxCentre?: TaxCentre) {
   market.setupMarketplace(workers);
   const tradeResult = market.sellAll(workers, taxCentre);
   if (tradeResult) market.adjustPrices(tradeResult);
+
+  markDead(workers);
 }
 function loop() {
   let time = 0;

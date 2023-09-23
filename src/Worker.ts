@@ -51,7 +51,6 @@ export class Worker implements Actor<ResourceType> {
         ? TICK_PRODUCED
         : -this.calculateConsumed(oldQuantity);
       this.resources[type] += quantity;
-      if (this.resources[type] <= 0) this.alive = false;
       // min for a resource is 0
       this.resources[type] = Math.max(0, this.resources[type]);
     });

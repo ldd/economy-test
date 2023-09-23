@@ -39,8 +39,7 @@ export class Transaction implements TransactionProps {
   transact(trade: PotentialTrade, prices: Market["prices"]) {
     if (trade.type === "money") return;
 
-    const quantity = this.sellProduct();
-    if (quantity <= 0) this.seller.alive = false;
+    this.sellProduct();
 
     const cost = prices[trade.type];
     this.buyer.resources.money -= cost;
